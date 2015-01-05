@@ -9,37 +9,45 @@
 <body>
     <span>no more decision for <%= userId %></span>
     <div id="wrapper">
-        <select name="weekend_or_not">
-            <option value="">오늘은..</option>
+        <select id="day" name="day">
+            <option value="">오늘은</option>
             <option value="weekday">평일</option>
-            <option value="weekend">주말</option>
+            <option value="saturday">토요일</option>
+            <option value="sunday">일요일</option>
         </select>
         
-        <select name="hungry_state">
+        <select id="hungry_state" name="hungry_state">
             <option value="">배고픔 상태</option>
-            <option value="degree1">밥까진 아니고, 그냥 입이 심심해</option>
-            <option value="degree2">적당히 배만 채우면 될 듯?</option>
-            <option value="degree3">겁나 배고파!!!!!!!!!!</option>
+            <option value="1">밥까진 아니고, 그냥 입이 심심해</option>
+            <option value="2">배고파!!!</option>
         </select>
 
-        <select name="money_state">
+        <select id="financial_state" name="financial_state">
             <option value="">재정 상태</option>
-            <option value="degree1">4000원 이하</option>
-            <option value="degree2">4000원 - 7000원</option>
-            <option value="degree3">7000원 - 10000원</option>
-            <option value="degree4">10000원이 넘어도 좋아, 나는 부유하지!</option>
+            <option value="1">5000원 이하</option>
+            <option value="2">5000원 - 7000원 이하</option>
+            <option value="3">7000원 - 10000원 이하</option>
+            <option value="4">10000원이 넘어도 좋아, 나는 부유하지!</option>
         </select>
         
-        <select name="time_state">
+        <select id="time_state" name="time_state">
             <option value="">나에게 주어진 시간은</option>
-            <option value="degree1">30분 이내. 후딱</option>
-            <option value="degree2">1시간 이내. 적당히</option>
-            <option value="degree3">1시간 넘어도. 느긋느긋</option>
+            <option value="1">후딱. 그냥 가까운 데로.</option>
+            <option value="2">적당히. 유스페이스 끝까지는 괜찮.</option>
+            <option value="3">느긋느긋. 넥스트 라이프 사이클 좀 벗어나도 괜찮.</option>
         </select>
         
-        <button>결과 보기</button>
+        <button id="submitButton">결과 보기</button>
     </div>
     
+    <div id="bgForModal"></div>
+    <div id="resultModal">
+        <button id="return">다시하기</button>
+    </div>
     
+    <script>
+        var userId = "<%= userId %>";
+    </script>
+    <script type="text/javascript" src="/main.js"></script>
 </body>
 </html>

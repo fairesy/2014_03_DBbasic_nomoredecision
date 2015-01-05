@@ -1,6 +1,7 @@
 body{
     text-align: center;
     padding-top: 170px;
+
 }
 span{
     font-size: 30px;
@@ -26,6 +27,7 @@ span{
     padding-left: 10px;
     box-sizing: border-box;
     margin-bottom: 10px;
+    text-align: center;
 }
 
 #newId:focus, #submitButton:focus{
@@ -40,4 +42,5 @@ span{
     margin-top: 10px;
     background-color: #404040;
     color: #ffffff;
+    cursor: pointer;
 }

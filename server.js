@@ -29,56 +29,72 @@ var pool = mysql.createPool({
     waitForConnections:true 
 });
 
+/* LOGIN
+접속시 첫페이지. 비밀번호 없이 id로 로그인한다. 
+회원일 경우 로그인하면 메인페이지로 이동한다.
+회원이 아닐 경우 join 페이지로 이동하여 가입과정을 거친다. 
+*/
 app.get('/', function(request, response){
     response.render('login.html');
 });
+app.post('/login', function(request, response){
+	var form = new formidable.IncomingForm();
+    form.parse(request, function(error, fields, files) {
+    	var userId = fields.id;
+    	pool.getConnection(function(err, connection){
+    		if(err){ throw err; }
+    		connection.query('SELECT id FROM user WHERE id="'+userId+'";', function(err, result){
+    			if(err){ throw err; }
+    			var isMember;
+    			if(result.length===0){ isMember=false; }
+    			else{ isMember=true; }
+    			response.json(isMember);
+    		});
+    		connection.release();
+    	});
+	});
+});
 
+/* JOIN
+새로운 멤버를 추가한다. 중복 아이디를 허용하지 않는다.
+*/
 app.get('/join', function(request, response){
 	response.render('join.html');
 });
-
 app.post('/newMember', function(request, response){
     var form = new formidable.IncomingForm();
     form.parse(request, function(error, fields, files){
-        if(error){
-            console.log('newMember Insert error');
-            throw error;
-        }
+        if(error){ throw error; }
         var newId = fields.newId;
         
         pool.getConnection(function(err, connection){
             if(err){ throw err; }
-            connection.query('INSERT INTO user(id) SELECT "'+newId+'" FROM DUAL WHERE NOT EXISTS (SELECT * FROM user WHERE id="'+newId+'");SELECT ROW_COUNT() AS flag;',function(err, result){
-                
+            var value=1;
+            connection.query('CALL insertUser("'+newId+'")',function(err, result){
                 if(err){ throw err; }
+            });
+            connection.release();
+            
+            pool.getConnection(function(err, connection){
+                if(err){ throw err; }
+                connection.query('SELECT @isExist AS flag;', function(err, result){
+                    if(err){ throw err; }
                     console.log(result[0].flag);
                     var isExistId;
                     if(result[0].flag===0){ isExistId = true; }
                     else{ isExistId = false; }
                     response.json(isExistId);
                     response.end();
-                
+                });
+                connection.release();
             });
-            connection.release();
-            
-            //클라이언트에 중복아이디인지 아닌지를 알려줄 수 있는 방법? ROW_COUNT()가 잘 동작하지 않는다.
-//            pool.getConnection(function(err, connection){
-//                if(err){ throw err; }
-//                connection.query('SELECT ROW_COUNT() AS flag;', function(err, result){
-//                    if(err){ throw err; }
-//                    console.log(result[0].flag);
-//                    var isExistId;
-//                    if(result[0].flag===0){ isExistId = true; }
-//                    else{ isExistId = false; }
-//                    response.json(isExistId);
-//                    response.end();
-//                });
-//                connection.release();
-//            });
         });
     });
 });
 
+/* MAIN
+로그인 성공 시 유저에 따라 메인페이지를 보여준다.
+*/
 app.get('/main/:userId', function(request, response){
     var userId = request.param('userId');
     console.log('>>>>>'+userId+'의 메인페이지로 이동하였습니다.');
@@ -88,43 +104,49 @@ app.get('/main/:userId', function(request, response){
 	response.render('main', data);
 });
 
-/*
-접속시 첫페이지. 비밀번호 없이 id(학번)로 로그인한다. 
-회원일 경우 로그인하면 메인페이지로 이동한다.
-회원이 아닐 경우 join 페이지로 이동하여 가입과정을 거친다. 
+/* FIND STORE
+사용자가 선택한 옵션에 맞는 가게목록을 찾는다.
 */
-app.post('/login', function(request, response){
-	var form = new formidable.IncomingForm();
-    form.parse(request, function(error, fields, files) {
-    	var userId = fields.id;
-    	pool.getConnection(function(err, connection){
-    		if(err){
-    			console.log('login db connection error');
-    			throw err;
-    		}
-    		connection.query('SELECT id FROM user WHERE id="'+userId+'";', function(err, result){
-    			if(err){
-    				console.log('id select error');
-    				throw err;
-    			}
-
-    			var isMember;
-
-    			if(result.length===0){ isMember=false; }
-    			else{ isMember=true; }
-    			response.json(isMember); // 쿼리 결과 전송 
-    		});
-    		connection.release();
-    	});
-	});
-});
-
-
-app.post('',function(request, response){
-	//주중.주말
-	//배고픔 상태 
-	//재정 상태
-	//여유 시간 
+app.post('/findStore',function(request, response){
+    var form = new formidable.IncomingForm();
+    form.parse(request, function(error, fields, files){
+        if(error){ throw error; }
+        var today = fields.today;
+        var hungry_degree = fields.hungry_degree;
+        var financial_degree = fields.financial_degree;
+        var time_degree = fields.time_degree;
+                
+        pool.getConnection(function(err,connection){
+            connection.query('SELECT type FROM matching_type WHERE hungry_degree="'+hungry_degree+'"AND financial_degree="'+financial_degree+'" AND time_degree="'+time_degree+'";',function(err, result){
+            
+                var storeType = result[0].type;
+                    
+                    if(today==='weekday'){
+                        pool.getConnection(function(err,connection){
+                            connection.query('SELECT id, name, location, description FROM store WHERE type="'+storeType+'";',function(err,result){
+                                var matchingStores = JSON.stringify(result);
+                                console.log(matchingStores);
+                                response.send(matchingStores);
+                                response.end();
+                            });
+                            connection.release();                     
+                        });
+                    }
+                    else{
+                        pool.getConnection(function(err,connection){
+                            connection.query("SELECT id, name, location, description FROM store WHERE type='"+storeType+"' AND "+today+"='Y';",function(err,result){
+                                var matchingStores = JSON.stringify(result);
+                                response.send(matchingStores);
+                                response.end();
+                            });
+                            connection.release();
+                        });
+                    }
+            });
+            connection.release();
+        });
+        
+    });
 
 });
 
